@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Comparator;
@@ -137,6 +138,24 @@ class JegyServiceTest {
         assertThat(this.jegyService.vasarlas(vetites.vetitesId(), elek, 15).getJegyId()).isNotNull();
         assertThat(this.jegyService.sajatJegyek(janos))
                 .anyMatch(j -> j.jegyId().equals(jegy.getJegyId()) && j.status() == JegyStatus.TOROLT);
+    }
+
+    // Az AuditorAware a bejelentkezett felhasznalot irja a letrehozta mezobe, a trigger nem irja felul
+    @Test
+    @WithMockUser(username = "elek@example.com")
+    void aJegyLetrehozojaABejelentkezettFelhasznalo() {
+        MusorElem vetites = vetites("Barbie");
+        long elek = ugyfel("elek@example.com").getUgyfelId();
+
+        Jegy jegy = this.jegyService.vasarlas(vetites.vetitesId(), elek, 20);
+
+        String letrehozta = this.jdbcTemplate.queryForObject(
+                "select letrehozta from jegy where jegy_id = ?", String.class, jegy.getJegyId());
+        String naplozo = this.jdbcTemplate.queryForObject(
+                "select modosito_felhasznalo from jegy_history where jegy_id = ? and muvelet = 'INSERT'",
+                String.class, jegy.getJegyId());
+        assertThat(letrehozta).isEqualTo("elek@example.com");
+        assertThat(naplozo).isEqualTo("elek@example.com");
     }
 
     @Test

@@ -11,6 +11,7 @@ import hu.mik.pte.prog5.mozi.repository.LekerdezesRepository;
 import hu.mik.pte.prog5.mozi.repository.TeremRepository;
 import hu.mik.pte.prog5.mozi.repository.UgyfelRepository;
 import hu.mik.pte.prog5.mozi.repository.VetitesRepository;
+import hu.mik.pte.prog5.mozi.service.UzletiSzabalyException.Tipus;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,23 +68,23 @@ public class JegyService {
         try {
             // 1. a vetites zarolasa, igy erre a vetitesre egyszerre csak egy vasarlas fut
             Vetites vetites = this.vetitesRepository.findByIdForUpdate(vetitesId)
-                    .orElseThrow(() -> new UzletiSzabalyException("jegy.vetites.nincs", "Nem létező vetítés."));
+                    .orElseThrow(() -> new UzletiSzabalyException(Tipus.NEM_TALALHATO, "jegy.vetites.nincs", "Nem létező vetítés."));
             if (!vetites.getKezdesIdo().isAfter(LocalDateTime.now())) {
-                throw new UzletiSzabalyException("jegy.vetites.elmult", "Erre a vetítésre már nem lehet jegyet venni.");
+                throw new UzletiSzabalyException(Tipus.ERVENYTELEN, "jegy.vetites.elmult", "Erre a vetítésre már nem lehet jegyet venni.");
             }
 
             // 2. a szek letezik-e es szabad-e
             Terem terem = this.teremRepository.findById(vetites.getTeremId()).orElseThrow();
             if (szekSzam < 1 || szekSzam > terem.getKapacitas()) {
-                throw new UzletiSzabalyException("jegy.szek.ervenytelen", "Nem létező szék: " + szekSzam + ".");
+                throw new UzletiSzabalyException(Tipus.ERVENYTELEN, "jegy.szek.ervenytelen", "Nem létező szék: " + szekSzam + ".");
             }
             if (this.jegyRepository.isSzekFoglalt(vetitesId, szekSzam)) {
-                throw new UzletiSzabalyException("jegy.szek.foglalt", "A szék már foglalt!");
+                throw new UzletiSzabalyException(Tipus.UTKOZES, "jegy.szek.foglalt", "A szék már foglalt!");
             }
 
             // 3. az ar a torzsvasarloi pontoktol fugg
             Ugyfel ugyfel = this.ugyfelRepository.findById(ugyfelId)
-                    .orElseThrow(() -> new UzletiSzabalyException("jegy.ugyfel.nincs", "Nem létező ügyfél."));
+                    .orElseThrow(() -> new UzletiSzabalyException(Tipus.NEM_TALALHATO, "jegy.ugyfel.nincs", "Nem létező ügyfél."));
             int ar = ugyfel.getTorzsvasarloiPontok() > KEDVEZMENY_PONTHATAR ? KEDVEZMENYES_AR : ALAP_AR;
 
             // 4. mentes; a pontokat a trg_pontgyujtes trigger irja jova
@@ -95,7 +96,7 @@ public class JegyService {
         } catch (DuplicateKeyException e) {
             // Az ux_jegy_vetites_szek index vedi a szeket, ha az ellenorzes es a mentes kozott valaki megelozott
             this.hibaNaploService.naploz("jegy.szek.foglalt", e.getMessage(), VASARLAS);
-            throw new UzletiSzabalyException("jegy.szek.foglalt", "A szék már foglalt!");
+            throw new UzletiSzabalyException(Tipus.UTKOZES, "jegy.szek.foglalt", "A szék már foglalt!");
         } catch (RuntimeException e) {
             this.hibaNaploService.naploz(e.getClass().getSimpleName(), e.getMessage(), VASARLAS);
             throw e;
@@ -110,16 +111,16 @@ public class JegyService {
     public void lemondas(long jegyId, long ugyfelId) {
         try {
             Jegy jegy = this.jegyRepository.findById(jegyId)
-                    .orElseThrow(() -> new UzletiSzabalyException("jegy.nincs", "Nem létező jegy."));
+                    .orElseThrow(() -> new UzletiSzabalyException(Tipus.NEM_TALALHATO, "jegy.nincs", "Nem létező jegy."));
             if (jegy.getUgyfelId() != ugyfelId) {
-                throw new UzletiSzabalyException("jegy.nem.sajat", "Ez nem a te jegyed.");
+                throw new UzletiSzabalyException(Tipus.TILTOTT, "jegy.nem.sajat", "Ez nem a te jegyed.");
             }
             if (jegy.getStatus() == JegyStatus.TOROLT) {
-                throw new UzletiSzabalyException("jegy.mar.torolt", "Ez a jegy már le van mondva.");
+                throw new UzletiSzabalyException(Tipus.ERVENYTELEN, "jegy.mar.torolt", "Ez a jegy már le van mondva.");
             }
             Vetites vetites = this.vetitesRepository.findById(jegy.getVetitesId()).orElseThrow();
             if (!vetites.getKezdesIdo().isAfter(LocalDateTime.now())) {
-                throw new UzletiSzabalyException("jegy.lemondas.elmult", "Elkezdődött vetítésre szóló jegy nem mondható le.");
+                throw new UzletiSzabalyException(Tipus.ERVENYTELEN, "jegy.lemondas.elmult", "Elkezdődött vetítésre szóló jegy nem mondható le.");
             }
 
             jegy.setStatus(JegyStatus.TOROLT);

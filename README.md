@@ -67,7 +67,24 @@ A `-v` az adatbázis teljes tartalmát törli.
 
 Az adatbázisos tesztek Testcontainers segítségével saját, eldobható PostgreSQL konténert indítanak ugyanazokkal az `init` szkriptekkel, így a fejlesztői adatbázist nem módosítják. Futó Docker kell hozzájuk, Docker nélkül kimaradnak.
 
-* `JegyServiceTest` (Jegyvásárlás alap és kedvezményes áron, pontjóváírás, foglalt és nem létező szék, elmúlt vetítés, lemondás, hibanaplózás külön tranzakcióban, bevételi nézet és a `szabad_helyek` függvény.)
+* `JegyServiceTest` (Jegyvásárlás alap és kedvezményes áron, pontjóváírás, foglalt és nem létező szék, elmúlt vetítés, lemondás, hibanaplózás külön tranzakcióban, a bejelentkezett felhasználó naplózása, bevételi nézet és a `szabad_helyek` függvény.)
+* `AuthApiTest` (Belépés, hibás jelszó, regisztráció BCrypt hash-sel, foglalt e-mail cím, validáció, kijelentkezés, CSRF védelem, admin jogosultság.)
+
+---
+
+## REST API
+
+A Svelte felület ezeken a végpontokon keresztül éri el a backendet. A módosító kérésekhez (POST) CSRF token kell: a `GET /api/auth/csrf` beállítja az `XSRF-TOKEN` cookie-t, amelynek értékét az `X-XSRF-TOKEN` fejlécben kell visszaküldeni.
+
+| Végpont | Leírás | Jogosultság |
+|---|---|---|
+| `GET /api/auth/csrf` | CSRF token | Mindenki |
+| `POST /api/auth/bejelentkezes` | Belépés (`email`, `jelszo`) | Mindenki |
+| `POST /api/auth/regisztracio` | Regisztráció (`nev`, `email`, `jelszo`), utána belépteti | Mindenki |
+| `GET /api/auth/en` | A bejelentkezett felhasználó | Bejelentkezett |
+| `POST /api/auth/kijelentkezes` | Kijelentkezés | Bejelentkezett |
+
+Hibánál a válasz egységes: `{ "kod": "...", "uzenet": "...", "mezok": { ... } }`.
 
 ---
 
@@ -87,6 +104,8 @@ Az adatbázisos tesztek Testcontainers segítségével saját, eldobható Postgr
 mozi-manager/
 ├── development/docker/        PostgreSQL konténer és init szkriptek
 └── src/main/java/hu/mik/pte/prog5/mozi/
+    ├── api/                   REST végpontok és egységes hibakezelés
+    ├── security/              Spring Security beállítás, felhasználók az adatbázisból
     ├── model/                 entitások és a nézetek recordjai
     ├── repository/            Spring Data JDBC repositoryk, JdbcTemplate lekérdezések
     ├── service/               üzleti logika (jegyvásárlás, lemondás, hibanapló)
@@ -99,8 +118,9 @@ mozi-manager/
 
 * **Backend:** Spring Boot 4.1, Java 25
 * **Adatelérés:** Spring Data JDBC, JdbcTemplate, SimpleJdbcCall
+* **Biztonság:** Spring Security (session alapú belépés, BCrypt, CSRF védelem)
 * **Adatbázis:** PostgreSQL 17, PL/pgSQL (Docker)
-* **Tesztek:** JUnit 5, Testcontainers
+* **Tesztek:** JUnit 5, MockMvc, Testcontainers
 * **Eszközök:** IntelliJ IDEA, Docker Desktop
 * **Project Status:** Fejlesztés alatt
 
