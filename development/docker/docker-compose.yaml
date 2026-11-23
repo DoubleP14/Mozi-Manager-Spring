@@ -1,0 +1,22 @@
+name: mozi-manager
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: mozi-db
+    environment:
+      POSTGRES_DB: mozi
+      POSTGRES_USER: mozi
+      POSTGRES_PASSWORD: mozi
+      # a now() es a vetitesi idopontok magyar ido szerint
+      TZ: Europe/Budapest
+      PGTZ: Europe/Budapest
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Az init mappa SQL-fajljai csak akkor futnak le, ha a volume meg ures (elso inditas)
+      - ./init:/docker-entrypoint-initdb.d
+
+volumes:
+  postgres_data:
