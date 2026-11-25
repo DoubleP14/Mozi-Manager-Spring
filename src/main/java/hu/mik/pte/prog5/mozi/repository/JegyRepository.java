@@ -15,4 +15,17 @@ public interface JegyRepository extends ListCrudRepository<Jegy, Long> {
 
     @Query("select count(*) > 0 from jegy where vetites_id = :vetitesId and szek_szam = :szekSzam and status <> 'TOROLT'")
     boolean isSzekFoglalt(@Param("vetitesId") Long vetitesId, @Param("szekSzam") Integer szekSzam);
+
+    @Query("select count(*) from jegy where vetites_id = :vetitesId and status <> 'TOROLT'")
+    int countAktivJegyek(@Param("vetitesId") Long vetitesId);
+
+    // A terem jovobeli vetitesein eladott legnagyobb szekszam: a kapacitas ez ala nem csokkenhet
+    @Query("""
+            select coalesce(max(j.szek_szam), 0)
+            from jegy j
+                     join vetites v on v.vetites_id = j.vetites_id
+            where v.terem_id = :teremId
+              and j.status <> 'TOROLT'
+              and v.kezdes_ido > now()""")
+    int maxEladottSzek(@Param("teremId") Long teremId);
 }

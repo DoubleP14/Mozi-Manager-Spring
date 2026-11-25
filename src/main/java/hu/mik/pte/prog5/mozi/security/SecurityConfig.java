@@ -1,6 +1,7 @@
 package hu.mik.pte.prog5.mozi.security;
 
-import jakarta.servlet.DispatcherType;
+import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
+import hu.mik.pte.prog5.mozi.ui.LoginView;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -25,7 +26,7 @@ import org.springframework.security.web.context.SecurityContextRepository;
 /**
  * Ket kulon szuro lanc lesz:
  *  1. /api/**  a Svelte feluletnek: JSON belepes, session cookie, CSRF cookie, atiranyitas helyett 401
- *  2. minden mas: kesobb a Vaadin admin felulet (4. lepes), addig minden tiltott
+ *  2. minden mas: a Vaadin admin felulet (/admin/**), sajat belepo oldallal
  */
 @Configuration
 @EnableWebSecurity
@@ -75,15 +76,15 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // TODO 4. lepes: ide kerul a Vaadin admin felulet beallitasa
+    // Minden mas a Vaadin admin felulete (/admin/**): ugyanaz, mint a ZH-kban.
+    // A nezetek jogosultsagat a @RolesAllowed / @PermitAll / @AnonymousAllowed annotaciok adjak.
     @Bean
     @Order(2)
-    public SecurityFilterChain egyebSecurityFilterChain(HttpSecurity http) {
-        http.authorizeHttpRequests(auth -> auth
-                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                        .requestMatchers("/error").permitAll()
-                        .anyRequest().denyAll())
-                .httpBasic(AbstractHttpConfigurer::disable);
+    public SecurityFilterChain vaadinSecurityFilterChain(HttpSecurity http) {
+        // A defaultSuccessUrl nelkul belepes utan a / cimre vinne, ami mar nem a Vaadin felulet
+        http.with(VaadinSecurityConfigurer.vaadin(), vaadin -> vaadin
+                .loginView(LoginView.class)
+                .defaultSuccessUrl("/admin/"));
         return http.build();
     }
 }

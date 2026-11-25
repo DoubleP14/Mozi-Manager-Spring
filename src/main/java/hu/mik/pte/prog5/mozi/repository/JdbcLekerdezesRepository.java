@@ -2,6 +2,7 @@ package hu.mik.pte.prog5.mozi.repository;
 
 import hu.mik.pte.prog5.mozi.model.JegyStatus;
 import hu.mik.pte.prog5.mozi.model.nezet.BevetelSor;
+import hu.mik.pte.prog5.mozi.model.nezet.HibaNaploSor;
 import hu.mik.pte.prog5.mozi.model.nezet.MusorElem;
 import hu.mik.pte.prog5.mozi.model.nezet.SajatJegy;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -64,6 +65,28 @@ public class JdbcLekerdezesRepository implements LekerdezesRepository {
     @Override
     public List<MusorElem> findJovobeliMusor() {
         return this.jdbcTemplate.query(MUSOR_OSZLOPOK + " where kezdes_ido > now() order by kezdes_ido", MUSOR_MAPPER);
+    }
+
+    @Override
+    public List<MusorElem> findTeljesMusor() {
+        return this.jdbcTemplate.query(MUSOR_OSZLOPOK + " order by kezdes_ido desc", MUSOR_MAPPER);
+    }
+
+    @Override
+    public List<HibaNaploSor> findLegutobbiHibak(int darab) {
+        return this.jdbcTemplate.query("""
+                        select hiba_id, idopont, hiba_kod, hiba_uzenet, eljaras_neve, felhasznalo
+                        from hiba_naplo
+                        order by idopont desc, hiba_id desc
+                        limit ?""",
+                (rs, rowNum) -> new HibaNaploSor(
+                        rs.getLong("hiba_id"),
+                        rs.getTimestamp("idopont").toLocalDateTime(),
+                        rs.getString("hiba_kod"),
+                        rs.getString("hiba_uzenet"),
+                        rs.getString("eljaras_neve"),
+                        rs.getString("felhasznalo")),
+                darab);
     }
 
     @Override

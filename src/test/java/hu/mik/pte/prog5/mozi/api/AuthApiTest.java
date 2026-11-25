@@ -18,6 +18,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -190,8 +191,11 @@ class AuthApiTest {
                 .andExpect(status().isForbidden());
     }
 
+    // Az API-n kivuli cimek a Vaadin admin feluletehez tartoznak: bejelentkezes nelkul a login oldalra visznek
     @Test
-    void azApinKivuliCimekTiltottak() throws Exception {
-        this.mockMvc.perform(get("/valami")).andExpect(status().isForbidden());
+    void azAdminFeluletBelepesNelkulALoginOldalraVisz() throws Exception {
+        this.mockMvc.perform(get("/admin/filmek"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(header().string("Location", org.hamcrest.Matchers.endsWith("/admin/login")));
     }
 }

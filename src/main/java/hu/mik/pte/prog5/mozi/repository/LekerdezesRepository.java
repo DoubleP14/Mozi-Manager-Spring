@@ -1,6 +1,7 @@
 package hu.mik.pte.prog5.mozi.repository;
 
 import hu.mik.pte.prog5.mozi.model.nezet.BevetelSor;
+import hu.mik.pte.prog5.mozi.model.nezet.HibaNaploSor;
 import hu.mik.pte.prog5.mozi.model.nezet.MusorElem;
 import hu.mik.pte.prog5.mozi.model.nezet.SajatJegy;
 
@@ -14,6 +15,11 @@ import java.util.Optional;
 public interface LekerdezesRepository {
 
     List<MusorElem> findJovobeliMusor();
+
+    // Az admin feluletnek: minden vetites, a legujabb elol
+    List<MusorElem> findTeljesMusor();
+
+    List<HibaNaploSor> findLegutobbiHibak(int darab);
 
     Optional<MusorElem> findMusorElem(long vetitesId);
 

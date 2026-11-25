@@ -35,3 +35,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Vaadin altal generalt fajlok ###
+src/main/frontend/generated/
+vite.generated.ts
