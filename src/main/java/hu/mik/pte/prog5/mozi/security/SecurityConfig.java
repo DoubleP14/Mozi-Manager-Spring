@@ -59,7 +59,7 @@ public class SecurityConfig {
                                                       SecurityContextRepository securityContextRepository) {
         http.securityMatcher("/api/**")
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET, "/api/auth/csrf").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auth/csrf", "/api/musor", "/api/musor/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/bejelentkezes", "/api/auth/regisztracio").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())

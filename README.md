@@ -8,6 +8,7 @@ Ez a repository a **Mozi Manager** projekt Spring Boot alkalmazását tartalmazz
 
 * **Java 25**
 * **Docker Desktop** (az adatbázishoz)
+* **Node.js 24** (a Svelte felülethez)
 
 A Maven-t nem kell telepíteni, a projekt tartalmazza a Maven Wrappert (`mvnw`).
 
@@ -34,6 +35,18 @@ Az alkalmazás címe: http://localhost:8090
 * **REST API (a Svelte felületnek):** http://localhost:8090/api
 
 Első indításkor a Vaadin előkészíti a frontendet, ez eltarthat egy-két percig.
+
+### 3. Felhasználói felület (Svelte) indítása
+
+Egy másik terminálban:
+
+```bash
+cd svelte-ui
+npm install
+npm run dev
+```
+
+A felhasználói felület címe: http://localhost:5173. A `/api` kéréseket a Vite fejlesztői szerver továbbítja a backendnek.
 
 ### Az adatbázis felépítése
 
@@ -75,6 +88,28 @@ Az adatbázisos tesztek Testcontainers segítségével saját, eldobható Postgr
 * `JegyServiceTest` (Jegyvásárlás alap és kedvezményes áron, pontjóváírás, foglalt és nem létező szék, elmúlt vetítés, lemondás, hibanaplózás külön tranzakcióban, a bejelentkezett felhasználó naplózása, bevételi nézet és a `szabad_helyek` függvény.)
 * `AuthApiTest` (Belépés, hibás jelszó, regisztráció BCrypt hash-sel, foglalt e-mail cím, validáció, kijelentkezés, CSRF védelem, admin jogosultság.)
 * `AdminServiceTest` (Az admin műveletek jogosultsága, átfedő vetítés, múltbeli vetítés, használatban lévő kategória, jegyes vetítés terme és törlése, terem kapacitása.)
+* `JegyApiTest` (Műsor belépés nélkül, alap és kedvezményes ár, több szék vásárlása egyszerre, foglalt széknél minden visszagördül, ismétlődő szék, lemondás csak a saját jegyre.)
+
+A Svelte felület típusellenőrzése és buildje:
+
+```bash
+cd svelte-ui
+npm run check
+npm run build
+```
+
+---
+
+## Felhasználói felület
+
+A SvelteKit felület a jegyvásárlóknak készült:
+
+| Oldal | Funkció |
+|---|---|
+| Műsor (`/`) | A jövőbeli vetítések naponként, szabad helyekkel |
+| Vetítés (`/vetites/[id]`) | Székválasztó térkép, kosár, vásárlás (egyszerre legfeljebb 10 jegy) |
+| Belépés, Regisztráció | Belépés után visszavisz oda, ahonnan jött |
+| Jegyeim (`/jegyeim`) | Saját jegyek, lemondás, törzsvásárlói pontok |
 
 ---
 
@@ -114,6 +149,11 @@ A Svelte felület ezeken a végpontokon keresztül éri el a backendet. A módos
 | `POST /api/auth/regisztracio` | Regisztráció (`nev`, `email`, `jelszo`), utána belépteti | Mindenki |
 | `GET /api/auth/en` | A bejelentkezett felhasználó | Bejelentkezett |
 | `POST /api/auth/kijelentkezes` | Kijelentkezés | Bejelentkezett |
+| `GET /api/musor` | A jövőbeli vetítések | Mindenki |
+| `GET /api/musor/{id}` | Egy vetítés a foglalt székekkel és a jegy árával | Mindenki |
+| `GET /api/jegyek` | Saját jegyek | Bejelentkezett |
+| `POST /api/jegyek` | Vásárlás (`vetitesId`, `szekek`), egy tranzakcióban | Bejelentkezett |
+| `POST /api/jegyek/{id}/lemondas` | Saját jegy lemondása | Bejelentkezett |
 
 Hibánál a válasz egységes: `{ "kod": "...", "uzenet": "...", "mezok": { ... } }`.
 
@@ -134,6 +174,7 @@ Hibánál a válasz egységes: `{ "kod": "...", "uzenet": "...", "mezok": { ... 
 ```text
 mozi-manager/
 ├── development/docker/        PostgreSQL konténer és init szkriptek
+├── svelte-ui/                 SvelteKit felhasználói felület (külön README)
 └── src/main/java/hu/mik/pte/prog5/mozi/
     ├── api/                   REST végpontok és egységes hibakezelés
     ├── security/              Spring Security beállítás, felhasználók az adatbázisból
@@ -152,6 +193,7 @@ mozi-manager/
 * **Adatelérés:** Spring Data JDBC, JdbcTemplate, SimpleJdbcCall
 * **Biztonság:** Spring Security (session alapú belépés, BCrypt, CSRF védelem, method security)
 * **Admin felület:** Vaadin 25 (magyar és angol nyelven)
+* **Felhasználói felület:** SvelteKit 3, Svelte 5, TypeScript, Vite
 * **Adatbázis:** PostgreSQL 17, PL/pgSQL (Docker)
 * **Tesztek:** JUnit 5, MockMvc, Testcontainers
 * **Eszközök:** IntelliJ IDEA, Docker Desktop
